@@ -1,0 +1,118 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  lint:
+    name: Lint (flake8)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: pip install flake8==7.1.1
+      - run: flake8 src api scripts tests --count --show-source --statistics
+
+  test:
+    name: Unit tests + coverage
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - run: pip install -r requirements-dev.txt
+      - name: Run pytest with coverage
+        run: >
+          pytest --cov=src --cov=api --cov-report=term-missing
+          --cov-report=xml --cov-report=html --cov-fail-under=80
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            coverage.xml
+            htmlcov/
+
+  train:
+    name: Train model
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Download data
+        run: python scripts/download_data.py
+      - name: Train
+        run: python src/train.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: training-outputs
+          path: |
+            models/
+            mlruns/
+            reports/figures/
+            docs/model_comparison.md
+
+  docker:
+    name: Docker build + smoke test
+    needs: train
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: training-outputs
+          path: artifacts
+      - name: Use freshly trained model
+        run: cp artifacts/models/* models/
+      - name: Build image
+        run: docker build -t heart-disease-api:ci .
+      - name: Run container
+        run: docker run -d --name api -p 8000:8000 heart-disease-api:ci
+      - name: Wait for /health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health; then echo; exit 0; fi
+            sleep 2
+          done
+          docker logs api
+          exit 1
+      - name: Smoke test /predict
+        run: |
+          out=$(curl -fsS -X POST http://localhost:8000/predict \
+            -H 'Content-Type: application/json' -d @sample_request.json)
+          echo "$out"
+          echo "$out" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['label'] in ('Healthy','Disease')"
+      - name: Invalid input returns 422
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/predict \
+            -H 'Content-Type: application/json' -d '{"age": 999}')
+          test "$code" = "422"
+      - name: Container logs
+        if: always()
+        run: docker logs api
