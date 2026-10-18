@@ -2,7 +2,7 @@ VENV := .venv
 PY := $(VENV)/bin/python
 IMAGE := heart-disease-api:latest
 
-.PHONY: setup data eda train test lint format docker-build docker-run k8s-deploy monitoring-up monitoring-down load-test clean
+.PHONY: report setup data eda train test lint format docker-build docker-run k8s-deploy monitoring-up monitoring-down load-test clean
 
 setup:  ## create venv and install dependencies
 	python3.11 -m venv $(VENV)
@@ -45,6 +45,9 @@ monitoring-down:
 
 load-test:
 	$(PY) scripts/load_test.py --url http://localhost:8000 --n 200
+
+report:  ## build docs/REPORT.docx and docs/REPORT.pdf
+	$(PY) scripts/build_report.py
 
 clean:
 	rm -rf .pytest_cache htmlcov .coverage coverage.xml

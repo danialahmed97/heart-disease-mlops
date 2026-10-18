@@ -13,6 +13,7 @@ the venv active (`source .venv/bin/activate`).
 | 6 | `lint_ok.png` | `make lint` | flake8 finishing with no output |
 | 7 | `github_actions_green.png` | Open https://github.com/danialahmed97/heart-disease-mlops/actions | Latest run with 4 green jobs |
 | 8 | `github_actions_artifacts.png` | Open that run, scroll to Artifacts | `training-outputs`, `coverage-report` |
+| 8b | `github_actions_failed.png` | Open https://github.com/danialahmed97/heart-disease-mlops/actions/runs/39131770605 | Failed "Unit tests + coverage" job, `assert 0 == 2`, later jobs skipped (the demo branch is deleted but the run page stays) |
 | 9 | `docker_build.png` | `make docker-build` | Successful build, final `naming to ... heart-disease-api:latest` |
 | 10 | `docker_curl.png` | `make docker-run` in one terminal; `curl -s localhost:8000/health; curl -s -X POST localhost:8000/predict -H 'Content-Type: application/json' -d @sample_request.json` | Both JSON responses |
 | 11 | `api_docs.png` | Open http://localhost:8000/docs | Swagger UI listing the endpoints |
@@ -25,3 +26,5 @@ the venv active (`source .venv/bin/activate`).
 | 18 | `api_logs.png` | `tail -n 5 logs/api.log` (local) or `docker logs hd-api \| tail` | JSON lines with latency_ms and prediction |
 
 Tip: run `make load-test` twice a minute apart so rate-based panels have enough points.
+
+After adding screenshots, run `make report` to rebuild `docs/REPORT.docx` and `docs/REPORT.pdf` with the images embedded.

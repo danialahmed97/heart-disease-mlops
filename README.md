@@ -114,10 +114,30 @@ node shares the local containerd store, so no registry is needed. The LoadBalanc
 internal network, so the script verifies through `kubectl port-forward` when the IP is not
 reachable from the host. HPA needs metrics-server (installed with `--kubelet-insecure-tls` on kind).
 
+## Access instructions (local testing)
+
+| What | Start | URL | Credentials |
+|---|---|---|---|
+| API in Docker | `make docker-build && make docker-run` | http://localhost:8000 (docs: `/docs`, metrics: `/metrics`) | none |
+| API on Kubernetes | `make k8s-deploy`, then `kubectl port-forward -n heart-disease svc/heart-disease-api 8080:80` | http://localhost:8080 (docs: `/docs`) | none |
+| MLflow UI | `.venv/bin/mlflow ui --backend-store-uri ./mlruns --port 5000` | http://localhost:5000 | none |
+| Prometheus | `make monitoring-up` | http://localhost:9090 (targets: `/targets`) | none |
+| Grafana | `make monitoring-up` | http://localhost:3000 (dashboard: `/d/heart-disease-api`) | `admin` / `admin` |
+
+Notes:
+
+* The Docker run and the monitoring stack both use port 8000, so stop one before starting the other
+  (`docker rm -f heart-api` or `make monitoring-down`).
+* Generate traffic for the dashboards with `make load-test` (needs the API on :8000).
+* The Kubernetes LoadBalancer IP (`kubectl get svc -n heart-disease`) is on Docker's internal network
+  and is normally not reachable from macOS, so use the port-forward.
+* Quick check: `curl -s localhost:8000/health` and
+  `curl -s -X POST localhost:8000/predict -H 'Content-Type: application/json' -d @sample_request.json`.
+
 ## Documentation and screenshots
 
-* [docs/REPORT.md](docs/REPORT.md) - the full report
+* [docs/REPORT.md](docs/REPORT.md) - the full report (also built as `docs/REPORT.docx` and `docs/REPORT.pdf` with `make report`)
 * [docs/SCREENSHOT_CHECKLIST.md](docs/SCREENSHOT_CHECKLIST.md) - exact screenshots to capture
 * [docs/VIDEO_SCRIPT.md](docs/VIDEO_SCRIPT.md) - 6-8 minute demo script
 
-Screenshot index: see the table in [docs/SCREENSHOT_CHECKLIST.md](docs/SCREENSHOT_CHECKLIST.md) (18 images saved to `screenshots/`).
+Screenshot index: see the table in [docs/SCREENSHOT_CHECKLIST.md](docs/SCREENSHOT_CHECKLIST.md) (19 images saved to `screenshots/`).
