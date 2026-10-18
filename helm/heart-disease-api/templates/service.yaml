@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "heart-disease-api.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "heart-disease-api.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ include "heart-disease-api.name" . }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
