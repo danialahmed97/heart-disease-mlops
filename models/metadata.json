@@ -32,7 +32,7 @@
     "thal"
   ],
   "trained_on_rows": 242,
-  "training_date": "2026-10-18T12:35:26.473474+00:00",
+  "training_date": "2026-10-18T12:37:31.431219+00:00",
   "sklearn_version": "1.5.2",
   "seed": 42
 }

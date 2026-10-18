@@ -1,0 +1,6 @@
+[flake8]
+max-line-length = 100
+exclude = .venv,mlruns,__pycache__,.git,htmlcov
+per-file-ignores =
+    scripts/build_eda_notebook.py:E501
+    tests/*:E402

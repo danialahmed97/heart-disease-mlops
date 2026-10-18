@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.config import CLEAN_PATH, DOCS_DIR, RAW_FEATURES, SEED, TARGET  # noqa: E402
 from src.config import (METADATA_PATH, MODEL_NAME,  # noqa: E402
                         MODEL_PATH, MODELS_DIR, set_seeds, setup_logging)
-from src import tracking  # noqa: E402
+from src import data_processing, tracking  # noqa: E402
 from src.features import build_pipeline  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -65,6 +65,9 @@ def get_candidates() -> dict[str, tuple[Any, dict[str, list]]]:
 
 def load_split() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """Stratified 80/20 split of the cleaned data."""
+    if not CLEAN_PATH.exists():
+        logger.info("Processed data missing - cleaning raw data first")
+        data_processing.main()
     df = pd.read_csv(CLEAN_PATH)
     # float64 everywhere so training and API inference share one schema
     return train_test_split(
@@ -203,8 +206,8 @@ def main(use_mlflow: bool = True) -> dict:
         version = tracking.tag_and_register_best(best["run_id"], best["name"])
     write_comparison(results, best)
     save_model(best, X_train, version)
-    return {"results": results, "best": best, "split": (X_train, X_test,
-                                                         y_train, y_test)}
+    split = (X_train, X_test, y_train, y_test)
+    return {"results": results, "best": best, "split": split}
 
 
 if __name__ == "__main__":
