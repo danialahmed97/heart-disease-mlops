@@ -192,6 +192,10 @@ The largest absolute coefficients of the final model are `ca = 0` (protective), 
 
 The best run is tagged `best_model=true` and registered as `heart-disease-classifier` with the alias `champion`.
 
+### 5.2 Model registry and versioning
+
+Each training run registers its best model under the name `heart-disease-classifier`, which creates a new version. I trained twice, so the registry shows **2 versions** of `heart-disease-classifier`, one per training run. After each run the `champion` alias is moved to the newly registered version, so it now points to the latest version (**v2**) and v1 stays available as the earlier version. This demonstrates both versioning (every run is kept and traceable to its MLflow run) and alias promotion (consumers ask for "champion" instead of a hard-coded version number, and promotion or rollback is just moving the alias). The version number is also written to `models/metadata.json` and returned as `model_version` by the API.
+
 ### 5.1 Run comparison
 
 | Run | Model | CV AUC | CV std | Test Acc | Precision | Recall | F1 | Test AUC | Tag |

@@ -8,7 +8,7 @@ the venv active (`source .venv/bin/activate`).
 | 1 | `eda_notebook.png` | `jupyter notebook notebooks/01_eda.ipynb` (or open in VS Code) | Correlation heatmap + insight cell |
 | 2 | `mlflow_runs.png` | `python src/train.py && mlflow ui --backend-store-uri ./mlruns` -> http://localhost:5000 | Experiment `heart-disease-classification` with 3 runs and metric columns |
 | 3 | `mlflow_best_run.png` | Click the LogisticRegression run | Params, metrics, artifacts (plots/, model/), `best_model` tag |
-| 4 | `mlflow_model_registry.png` | MLflow UI -> Models | `heart-disease-classifier` version 1 with alias `champion` |
+| 4 | `mlflow_model_registry.png` | MLflow UI -> Models | `heart-disease-classifier` listing 2 versions (v1, v2) from the two training runs, with the `champion` alias on the latest version (v2). Open the model page to show both versions and the alias |
 | 5 | `pytest_coverage.png` | `make test` | `36 passed` and the coverage table (~97%) |
 | 6 | `lint_ok.png` | `make lint` | flake8 finishing with no output |
 | 7 | `github_actions_green.png` | Open https://github.com/danialahmed97/heart-disease-mlops/actions | Latest run with 4 green jobs |
