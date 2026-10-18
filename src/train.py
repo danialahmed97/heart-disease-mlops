@@ -1,11 +1,15 @@
 """Train, tune and compare models for heart-disease prediction."""
+import argparse
+import json
 import logging
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import numpy as np
+import joblib
 import pandas as pd
+import sklearn
 from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (accuracy_score, f1_score, precision_score,
@@ -16,7 +20,9 @@ from sklearn.model_selection import (GridSearchCV, StratifiedKFold,
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.config import CLEAN_PATH, DOCS_DIR, RAW_FEATURES, SEED, TARGET  # noqa: E402
-from src.config import set_seeds, setup_logging  # noqa: E402
+from src.config import (METADATA_PATH, MODEL_NAME,  # noqa: E402
+                        MODEL_PATH, MODELS_DIR, set_seeds, setup_logging)
+from src import tracking  # noqa: E402
 from src.features import build_pipeline  # noqa: E402
 
 logger = logging.getLogger(__name__)
@@ -60,8 +66,9 @@ def get_candidates() -> dict[str, tuple[Any, dict[str, list]]]:
 def load_split() -> tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """Stratified 80/20 split of the cleaned data."""
     df = pd.read_csv(CLEAN_PATH)
+    # float64 everywhere so training and API inference share one schema
     return train_test_split(
-        df[RAW_FEATURES], df[TARGET], test_size=0.2,
+        df[RAW_FEATURES].astype("float64"), df[TARGET], test_size=0.2,
         stratify=df[TARGET], random_state=SEED,
     )
 
@@ -141,11 +148,37 @@ def write_comparison(results: list[dict[str, Any]], best: dict) -> None:
     (DOCS_DIR / "model_comparison.md").write_text("\n".join(lines))
 
 
-def main() -> dict:
+def save_model(best: dict, X_train: pd.DataFrame, version: str) -> dict:
+    """Persist the full pipeline and its metadata under models/."""
+    MODELS_DIR.mkdir(exist_ok=True)
+    joblib.dump(best["pipeline"], MODEL_PATH)
+    metrics = {k: round(v, 4) for k, v in best.items()
+               if k.startswith(("test_", "cv_"))}
+    meta = {
+        "model_name": best["name"],
+        "registered_name": MODEL_NAME,
+        "version": version,
+        "metrics": metrics,
+        "hyperparameters": {k.replace("model__", ""): v
+                            for k, v in best["best_params"].items()},
+        "features": list(X_train.columns),
+        "trained_on_rows": int(len(X_train)),
+        "training_date": datetime.now(timezone.utc).isoformat(),
+        "sklearn_version": sklearn.__version__,
+        "seed": SEED,
+    }
+    METADATA_PATH.write_text(json.dumps(meta, indent=2, default=str))
+    logger.info("Saved %s and %s", MODEL_PATH, METADATA_PATH)
+    return meta
+
+
+def main(use_mlflow: bool = True) -> dict:
     """Run the full training experiment."""
     set_seeds()
     X_train, X_test, y_train, y_test = load_split()
     logger.info("Train %s, test %s", X_train.shape, X_test.shape)
+    if use_mlflow:
+        tracking.init_mlflow()
     results = []
     for name, (est, grid) in get_candidates().items():
         gs = tune_model(name, est, grid, X_train, y_train)
@@ -160,14 +193,23 @@ def main() -> dict:
             "y_pred": pred, "y_proba": proba,
             **{k: float(v) for k, v in test_metrics(y_test, pred, proba).items()},
         }
+        if use_mlflow:
+            res["run_id"] = tracking.log_run(res, X_train, X_test, y_test)
         results.append(res)
     best = select_best(results)
     logger.info("Best model: %s", best["name"])
+    version = "local"
+    if use_mlflow:
+        version = tracking.tag_and_register_best(best["run_id"], best["name"])
     write_comparison(results, best)
+    save_model(best, X_train, version)
     return {"results": results, "best": best, "split": (X_train, X_test,
                                                          y_train, y_test)}
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--no-mlflow", action="store_true",
+                        help="skip MLflow tracking")
     setup_logging()
-    main()
+    main(use_mlflow=not parser.parse_args().no_mlflow)

@@ -1,0 +1,38 @@
+{
+  "model_name": "LogisticRegression",
+  "registered_name": "heart-disease-classifier",
+  "version": "1",
+  "metrics": {
+    "cv_roc_auc_mean": 0.9018,
+    "cv_roc_auc_std": 0.0156,
+    "test_accuracy": 0.8852,
+    "test_precision": 0.8387,
+    "test_recall": 0.9286,
+    "test_f1": 0.8814,
+    "test_roc_auc": 0.9665
+  },
+  "hyperparameters": {
+    "C": 1,
+    "class_weight": null,
+    "penalty": "l2"
+  },
+  "features": [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "trained_on_rows": 242,
+  "training_date": "2026-10-18T12:35:26.473474+00:00",
+  "sklearn_version": "1.5.2",
+  "seed": 42
+}
