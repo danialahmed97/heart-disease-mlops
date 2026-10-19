@@ -3,6 +3,8 @@
 BITS Pilani AIMLCZG523 - MLOps, Assignment 1.
 Repository: https://github.com/danialahmed97/heart-disease-mlops
 
+Video: https://drive.google.com/file/d/1EXFVzOWV8I3ZpWqO-PTZG7bHbzM3JBZo/view?usp=sharing
+
 A classifier trained on the UCI Cleveland Heart Disease dataset, tracked with MLflow, tested and built
 by GitHub Actions, served by FastAPI in Docker, deployed to Kubernetes (Docker Desktop / kind), and
 monitored with Prometheus + Grafana.
