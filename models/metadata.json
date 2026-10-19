@@ -1,7 +1,7 @@
 {
   "model_name": "LogisticRegression",
   "registered_name": "heart-disease-classifier",
-  "version": "2",
+  "version": "3",
   "metrics": {
     "cv_roc_auc_mean": 0.9018,
     "cv_roc_auc_std": 0.0156,
@@ -32,7 +32,7 @@
     "thal"
   ],
   "trained_on_rows": 242,
-  "training_date": "2026-10-18T14:21:33.111430+00:00",
+  "training_date": "2026-10-19T17:47:45.380928+00:00",
   "sklearn_version": "1.5.2",
   "seed": 42
 }
